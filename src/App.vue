@@ -12,23 +12,6 @@ const puzzleMap = ref(
 
 const getCenterPointSize = () => puzzleSize.value * 2 - 1;
 
-const colors = [
-  "red",
-  "silver",
-  "white",
-  "purple",
-  "gray",
-  "fuchsia",
-  "yellow",
-  "green",
-  "lime",
-  "olive",
-  "navy",
-  "blue",
-  "teal",
-  "aqua",
-];
-
 const centerPointsMap = ref(
   Array(getCenterPointSize())
     .fill(null)
@@ -53,6 +36,7 @@ const clearPuzzle = () => {
 };
 
 const solvePuzzle = () => {
+  console.log(JSON.stringify(centerPointsMap.value));
   const solvedPuzzleMap = galaxiesSolver(
     centerPointsMap.value,
     puzzleSize.value
@@ -60,10 +44,15 @@ const solvePuzzle = () => {
   puzzleMap.value = solvedPuzzleMap;
 };
 
+(window as any)._loadPuzzle = (map: number[][]) => {
+  puzzleSize.value = (map.length + 1) / 2;
+  clearPuzzle();
+  centerPointsMap.value = map;
+};
+
 const changeSize = (e: FocusEvent) => {
-  console.log((e.target as HTMLInputElement).value)
   puzzleSize.value = Math.min(
-    15,
+    25,
     Math.max(5, parseInt((e.target as HTMLInputElement).value))
   );
   clearPuzzle();
@@ -71,43 +60,51 @@ const changeSize = (e: FocusEvent) => {
 </script>
 
 <template>
-  <div class="puzzle">
-    <div class="row" v-for="x in puzzleSize">
-      <div
-        class="cell"
-        v-for="y in puzzleSize"
-        :style="{
-          backgroundColor:
-            puzzleMap[x - 1][y - 1] !== -1
-              ? colors[puzzleMap[x - 1][y - 1] % colors.length]
-              : '',
-        }"
-      >
+  <div class="container">
+    <div class="puzzle">
+      <div class="row" v-for="y in puzzleSize">
         <div
-          v-if="y !== 1 && x !== 1"
-          class="point cross"
-          :class="{
-            confirm: centerPointsMap[2 * (x - 2) + 1][2 * (y - 2) + 1],
-          }"
-          @click="onClickPoint(2 * (x - 2) + 1, 2 * (y - 2) + 1)"
-        ></div>
-        <div
-          class="point center"
-          :class="{ confirm: centerPointsMap[2 * (x - 1)][2 * (y - 1)] }"
-          @click="onClickPoint(2 * (x - 1), 2 * (y - 1))"
-        ></div>
-        <div
-          v-if="y !== 1"
-          class="point top-border"
-          :class="{ confirm: centerPointsMap[2 * (x - 1)][2 * (y - 2) + 1] }"
-          @click="onClickPoint(2 * (x - 1), 2 * (y - 2) + 1)"
-        ></div>
-        <div
-          v-if="x !== 1"
-          class="point left-border"
-          :class="{ confirm: centerPointsMap[2 * (x - 2) + 1][2 * (y - 1)] }"
-          @click="onClickPoint(2 * (x - 2) + 1, 2 * (y - 1))"
-        ></div>
+          class="cell"
+          v-for="x in puzzleSize"
+        >
+          <div
+            v-if="
+              y !== 1 && puzzleMap[x - 1][y - 1] !== puzzleMap[x - 1][y - 2]
+            "
+            class="separator-top"
+          ></div>
+          <div
+            v-if="
+              x !== 1 && puzzleMap[x - 1][y - 1] !== puzzleMap[x - 2][y - 1]
+            "
+            class="separator-left"
+          ></div>
+          <div
+            v-if="y !== 1 && x !== 1"
+            class="point cross"
+            :class="{
+              confirm: centerPointsMap[2 * (x - 2) + 1][2 * (y - 2) + 1],
+            }"
+            @click="onClickPoint(2 * (x - 2) + 1, 2 * (y - 2) + 1)"
+          ></div>
+          <div
+            class="point center"
+            :class="{ confirm: centerPointsMap[2 * (x - 1)][2 * (y - 1)] }"
+            @click="onClickPoint(2 * (x - 1), 2 * (y - 1))"
+          ></div>
+          <div
+            v-if="y !== 1"
+            class="point top-border"
+            :class="{ confirm: centerPointsMap[2 * (x - 1)][2 * (y - 2) + 1] }"
+            @click="onClickPoint(2 * (x - 1), 2 * (y - 2) + 1)"
+          ></div>
+          <div
+            v-if="x !== 1"
+            class="point left-border"
+            :class="{ confirm: centerPointsMap[2 * (x - 2) + 1][2 * (y - 1)] }"
+            @click="onClickPoint(2 * (x - 2) + 1, 2 * (y - 1))"
+          ></div>
+        </div>
       </div>
     </div>
   </div>
@@ -117,20 +114,36 @@ const changeSize = (e: FocusEvent) => {
 </template>
 
 <style scoped>
-.puzzle {
-  border: 1px solid gray;
-  border-right: 0;
-  border-bottom: 0;
+.container {
   display: flex;
+}
+
+.puzzle {
+  border: 4px solid black;
+  display: flex;
+  flex-direction: column;
+}
+
+.row {
+  display: flex;
+  flex-direction: row;
 }
 
 .cell {
   width: 32px;
   height: 32px;
-  border: 1px solid gray;
+  border: 1px solid rgb(170, 170, 170);
   border-left: 0;
   border-top: 0;
   position: relative;
+}
+
+.row:last-child > .cell {
+  border-bottom: 0;
+}
+
+.cell:last-child {
+  border-right: 0;
 }
 
 .point {
@@ -145,11 +158,11 @@ const changeSize = (e: FocusEvent) => {
   content: " ";
   /* display: block; */
   display: none;
-  width: 10px;
-  height: 10px;
-  border-radius: 5px;
+  width: 12px;
+  height: 12px;
+  border-radius: 6px;
   box-sizing: border-box;
-  border: 1px solid black;
+  border: 2px solid black;
   background-color: white;
   position: relative;
   top: 3px;
@@ -158,35 +171,55 @@ const changeSize = (e: FocusEvent) => {
 
 .point:hover::before {
   display: block;
-  border: 1px dashed #7b7b7b;
+  border: 2px dashed #7b7b7b;
 }
 
 .point.confirm::before {
   display: block;
-  border: 1px solid black;
+  border: 2px solid black;
 }
 
 .cross {
   position: absolute;
-  left: -8.5px;
-  top: -8.5px;
+  left: -9.5px;
+  top: -9.5px;
 }
 
 .center {
   position: absolute;
-  left: 8px;
-  top: 8px;
+  left: 7px;
+  top: 7px;
 }
 
 .top-border {
   position: absolute;
-  left: 8px;
-  top: -8.5px;
+  left: 7px;
+  top: -9.5px;
 }
 
 .left-border {
   position: absolute;
-  left: -8.5px;
-  top: 8px;
+  left: -9.5px;
+  top: 7px;
+}
+
+.separator-left {
+  width: 4px;
+  height: 36px;
+  background-color: black;
+  position: absolute;
+  z-index: 2;
+  left: -2.5px;
+  top: -2.5px;
+}
+
+.separator-top {
+  width: 36px;
+  height: 4px;
+  background-color: black;
+  position: absolute;
+  z-index: 2;
+  left: -2.5px;
+  top: -2.5px;
 }
 </style>

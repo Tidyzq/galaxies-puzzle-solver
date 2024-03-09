@@ -120,6 +120,27 @@ export function galaxiesSolver(
 
   centerPoints.forEach(markPossibleForCenterPoint);
 
+  // 3. find determined cell
+  let findDetermined = false;
+  do {
+    findDetermined = false;
+    for (let x = 0; x < puzzleSize; x += 1) {
+      for (let y = 0; y < puzzleSize; y += 1) {
+        if (puzzleMap[x][y] === -1 && possibleCenterMap[x][y].length === 1) {
+          const centerPointIndex = possibleCenterMap[x][y][0];
+          const centerPoint = centerPoints[centerPointIndex]!;
+          const { x: sx, y: sy } = getCentralSymmetricPoint(x, y, centerPoint);
+          puzzleMap[x][y] = puzzleMap[sx][sy] = centerPointIndex;
+          findDetermined = true;
+        }
+      }
+    }
+    if (findDetermined) {
+      clearPossible();
+      centerPoints.forEach(markPossibleForCenterPoint);
+    }
+  } while (findDetermined);
+
   const validate = (): boolean => {
     const meet = Array(puzzleSize)
       .fill(null)
@@ -137,22 +158,22 @@ export function galaxiesSolver(
         if (meet[x][y]) continue;
         if (puzzleMap[x][y] !== centerPointIndex) continue;
 
-        meet[x][y] = 1
-        forEachDir({x, y}, p => queue.push(p))
+        meet[x][y] = 1;
+        forEachDir({ x, y }, (p) => queue.push(p));
       }
     });
 
-    return meet.every(meet => meet.every(m => !!m))
+    return meet.every((meet) => meet.every((m) => !!m));
   };
 
-  // 3. dfs
+  // 4. dfs
   const dfs = (x: number, y: number): boolean => {
     if (y >= puzzleSize) return validate();
 
     if (x >= puzzleSize) return dfs(0, y + 1);
     if (puzzleMap[x][y] !== -1) return dfs(x + 1, y);
 
-    const possibles = [...possibleCenterMap[x][y]];
+    const possibles = possibleCenterMap[x][y];
 
     for (const possibleCenterPointIndex of possibles) {
       const possibleCenterPoint = centerPoints[possibleCenterPointIndex]!;
@@ -165,10 +186,10 @@ export function galaxiesSolver(
 
       puzzleMap[x][y] = puzzleMap[sx][sy] = possibleCenterPointIndex;
 
-      clearPossible();
-      centerPoints.forEach(markPossibleForCenterPoint);
+      // clearPossible();
+      // centerPoints.forEach(markPossibleForCenterPoint);
 
-      if (dfs(x + 1, 0)) return true;
+      if (dfs(x + 1, y)) return true;
 
       puzzleMap[x][y] = puzzleMap[sx][sy] = -1;
 
