@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, reactive, ref } from "vue";
-import { galaxiesSolver } from "./solver";
+import { coloringMap, galaxiesSolver } from "./solver";
+
+const colors = ["#ff9999", "#99ff99", "#99ccff", "#ffff99", "white", "#dddddd"];
 
 const puzzleSize = ref(7);
 
@@ -20,13 +22,18 @@ const centerPointsMap = ref(
 
 const onClickPoint = (x: number, y: number) => {
   if (centerPointsMap.value[x][y]) {
+    centerPointCount -= 1;
     centerPointsMap.value[x][y] = 0;
   } else {
+    centerPointCount += 1;
     centerPointsMap.value[x][y] = 1;
   }
 };
 
+let centerPointCount = 0;
+
 const clearPuzzle = () => {
+  centerPointCount = 0;
   puzzleMap.value = Array(puzzleSize.value)
     .fill(null)
     .map(() => Array<number>(puzzleSize.value).fill(-1));
@@ -41,7 +48,12 @@ const solvePuzzle = () => {
     centerPointsMap.value,
     puzzleSize.value
   );
-  puzzleMap.value = solvedPuzzleMap;
+  const coloredPuzzleMap = coloringMap(
+    solvedPuzzleMap,
+    puzzleSize.value,
+    centerPointCount
+  );
+  puzzleMap.value = coloredPuzzleMap;
 };
 
 (window as any)._loadPuzzle = (map: number[][]) => {
@@ -66,6 +78,12 @@ const changeSize = (e: FocusEvent) => {
         <div
           class="cell"
           v-for="x in puzzleSize"
+          :style="{
+            backgroundColor:
+              puzzleMap[x - 1][y - 1] === -1
+                ? ''
+                : colors[puzzleMap[x - 1][y - 1] % colors.length],
+          }"
         >
           <div
             v-if="

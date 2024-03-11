@@ -1,5 +1,47 @@
 type Point = { x: number; y: number };
 
+const getCentralSymmetricPoint = (
+  x: number,
+  y: number,
+  centerPoint: Point
+): Point => ({
+  x: centerPoint.x - x,
+  y: centerPoint.y - y,
+});
+
+const forEachCenterCell = (centerPoint: Point, cb: (point: Point) => void) => {
+  (centerPoint.x % 2
+    ? [(centerPoint.x - 1) / 2, (centerPoint.x + 1) / 2]
+    : [centerPoint.x / 2]
+  ).forEach((x) => {
+    (centerPoint.y % 2
+      ? [(centerPoint.y - 1) / 2, (centerPoint.y + 1) / 2]
+      : [centerPoint.y / 2]
+    ).forEach((y) => {
+      cb({ x, y });
+    });
+  });
+};
+
+const forEachDir = ({ x, y }: Point, cb: (point: Point) => void) => {
+  cb({
+    x,
+    y: y - 1,
+  });
+  cb({
+    x,
+    y: y + 1,
+  });
+  cb({
+    x: x - 1,
+    y,
+  });
+  cb({
+    x: x + 1,
+    y,
+  });
+};
+
 export function galaxiesSolver(
   centerPointsMap: number[][],
   puzzleSize: number
@@ -20,51 +62,6 @@ export function galaxiesSolver(
         .fill(null)
         .map(() => [] as number[])
     );
-
-  const getCentralSymmetricPoint = (
-    x: number,
-    y: number,
-    centerPoint: Point
-  ): Point => ({
-    x: centerPoint.x - x,
-    y: centerPoint.y - y,
-  });
-
-  const forEachCenterCell = (
-    centerPoint: Point,
-    cb: (point: Point) => void
-  ) => {
-    (centerPoint.x % 2
-      ? [(centerPoint.x - 1) / 2, (centerPoint.x + 1) / 2]
-      : [centerPoint.x / 2]
-    ).forEach((x) => {
-      (centerPoint.y % 2
-        ? [(centerPoint.y - 1) / 2, (centerPoint.y + 1) / 2]
-        : [centerPoint.y / 2]
-      ).forEach((y) => {
-        cb({ x, y });
-      });
-    });
-  };
-
-  const forEachDir = ({ x, y }: Point, cb: (point: Point) => void) => {
-    cb({
-      x,
-      y: y - 1,
-    });
-    cb({
-      x,
-      y: y + 1,
-    });
-    cb({
-      x: x - 1,
-      y,
-    });
-    cb({
-      x: x + 1,
-      y,
-    });
-  };
 
   const clearPossible = () => {
     for (let x = 0; x < puzzleSize; x += 1) {
@@ -202,4 +199,95 @@ export function galaxiesSolver(
   dfs(0, 0);
 
   return puzzleMap;
+}
+
+export function coloringMap(
+  puzzleMap: number[][],
+  puzzleSize: number,
+  centerCount: number
+): number[][] {
+  const edges = Array(centerCount)
+    .fill(null)
+    .map(() => Array<number>(centerCount).fill(0));
+
+  const meet = Array(puzzleSize)
+    .fill(null)
+    .map(() => Array<number>(puzzleSize).fill(0));
+
+  for (let y = 0; y < puzzleSize; y += 1) {
+    for (let x = 0; x < puzzleSize; x += 1) {
+      if (puzzleMap[x][y] === -1) continue;
+
+      const index = puzzleMap[x][y];
+      const queue: Point[] = [];
+      queue.push({ x, y });
+
+      while (queue.length) {
+        const { x, y } = queue.shift()!;
+
+        if (x < 0 || x >= puzzleSize || y < 0 || y >= puzzleSize) continue;
+
+        if (meet[x][y]) continue;
+        if (puzzleMap[x][y] === -1) continue;
+        if (puzzleMap[x][y] !== index) {
+          const neighbor = puzzleMap[x][y];
+          edges[index][neighbor] = edges[neighbor][index] = 1;
+          continue;
+        }
+
+        meet[x][y] = 1;
+
+        forEachDir({ x, y }, (p) => queue.push(p));
+      }
+    }
+  }
+
+  const colorMap = Array<number>(centerCount).fill(-1);
+  let coloredCount = 0;
+
+  let colorIndex = 0;
+
+  while (coloredCount < centerCount) {
+    const meet = Array<number>(centerCount).fill(0);
+    const colored = Array<number>(centerCount).fill(0);
+    const queue: number[] = [];
+
+    queue.push(colorMap.findIndex((c) => c === -1));
+
+    while (queue.length) {
+      const index = queue.shift()!;
+      if (meet[index]) continue;
+
+      meet[index] = 1
+
+      if (colorMap[index] === -1 && colored[index] === 0) {
+        colorMap[index] = colorIndex;
+        coloredCount += 1;
+        for (let i = 0; i < centerCount; i += 1) {
+          if (i !== index && edges[index][i]) {
+            colored[i] = 1;
+            queue.push(i);
+          }
+        }
+      } else {
+        for (let i = 0; i < centerCount; i += 1) {
+          if (i !== index && edges[index][i]) {
+            queue.push(i);
+          }
+        }
+      }
+    }
+
+    colorIndex += 1;
+  }
+
+  return Array(puzzleSize)
+    .fill(null)
+    .map((_, x) =>
+      Array<number>(puzzleSize)
+        .fill(0)
+        .map((_, y) =>
+          puzzleMap[x][y] !== -1 ? colorMap[puzzleMap[x][y]] : -1
+        )
+    );
 }
