@@ -44,9 +44,9 @@ const forEachDir = ({ x, y }: Point, cb: (point: Point) => void) => {
 
 export function galaxiesSolver(
   centerPointsMap: number[][],
-  puzzleSize: number
 ): number[][] {
-  const centerPointsSize = puzzleSize * 2 - 1;
+  const centerPointsSize = centerPointsMap.length;
+  const puzzleSize = (centerPointsSize + 1) / 2
   let centerPointsCount = 0;
 
   const centerPoints: Point[] = [];
@@ -203,9 +203,16 @@ export function galaxiesSolver(
 
 export function coloringMap(
   puzzleMap: number[][],
-  puzzleSize: number,
-  centerCount: number
 ): number[][] {
+  const puzzleSize = puzzleMap.length
+  let centerCount = 0
+
+  for (let y = 0; y < puzzleSize; y += 1) {
+    for (let x = 0; x < puzzleSize; x += 1) {
+      centerCount = Math.max(centerCount, puzzleMap[x][y] + 1);
+    }
+  }
+
   const edges = Array(centerCount)
     .fill(null)
     .map(() => Array<number>(centerCount).fill(0));
@@ -243,43 +250,31 @@ export function coloringMap(
   }
 
   const colorMap = Array<number>(centerCount).fill(-1);
-  let coloredCount = 0;
+  let reverseCount = 0
 
-  let colorIndex = 0;
+  const dfs = (index: number): boolean => {
+    if (index >= centerCount) return true
+    for (let c = 0; c < 4; c += 1) {
+      let conflict = false
+      for (let i = 0; i < centerCount; i += 1) {
+        if (i === index) continue
 
-  while (coloredCount < centerCount) {
-    const meet = Array<number>(centerCount).fill(0);
-    const colored = Array<number>(centerCount).fill(0);
-    const queue: number[] = [];
-
-    queue.push(colorMap.findIndex((c) => c === -1));
-
-    while (queue.length) {
-      const index = queue.shift()!;
-      if (meet[index]) continue;
-
-      meet[index] = 1
-
-      if (colorMap[index] === -1 && colored[index] === 0) {
-        colorMap[index] = colorIndex;
-        coloredCount += 1;
-        for (let i = 0; i < centerCount; i += 1) {
-          if (i !== index && edges[index][i]) {
-            colored[i] = 1;
-            queue.push(i);
-          }
-        }
-      } else {
-        for (let i = 0; i < centerCount; i += 1) {
-          if (i !== index && edges[index][i]) {
-            queue.push(i);
-          }
+        if (edges[index][i] && colorMap[i] === c) {
+          conflict = true
+          break;
         }
       }
+      if (!conflict) {
+        colorMap[index] = c
+        if (dfs(index + 1)) return true
+        reverseCount += 1
+        colorMap[index] = -1
+      }
     }
-
-    colorIndex += 1;
+    return false
   }
+
+  dfs(0)
 
   return Array(puzzleSize)
     .fill(null)

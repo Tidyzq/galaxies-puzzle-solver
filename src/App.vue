@@ -2,7 +2,7 @@
 import { computed, reactive, ref } from "vue";
 import { coloringMap, galaxiesSolver } from "./solver";
 
-const colors = ["#ff9999", "#99ff99", "#99ccff", "#ffff99", "white", "#dddddd"];
+const colors = ["#ff9999", "#99ff99", "#99ccff", "#ffff99", "#dddddd", "white"];
 
 const puzzleSize = ref(7);
 
@@ -22,18 +22,13 @@ const centerPointsMap = ref(
 
 const onClickPoint = (x: number, y: number) => {
   if (centerPointsMap.value[x][y]) {
-    centerPointCount -= 1;
     centerPointsMap.value[x][y] = 0;
   } else {
-    centerPointCount += 1;
     centerPointsMap.value[x][y] = 1;
   }
 };
 
-let centerPointCount = 0;
-
 const clearPuzzle = () => {
-  centerPointCount = 0;
   puzzleMap.value = Array(puzzleSize.value)
     .fill(null)
     .map(() => Array<number>(puzzleSize.value).fill(-1));
@@ -44,15 +39,8 @@ const clearPuzzle = () => {
 
 const solvePuzzle = () => {
   console.log(JSON.stringify(centerPointsMap.value));
-  const solvedPuzzleMap = galaxiesSolver(
-    centerPointsMap.value,
-    puzzleSize.value
-  );
-  const coloredPuzzleMap = coloringMap(
-    solvedPuzzleMap,
-    puzzleSize.value,
-    centerPointCount
-  );
+  const solvedPuzzleMap = galaxiesSolver(centerPointsMap.value);
+  const coloredPuzzleMap = coloringMap(solvedPuzzleMap);
   puzzleMap.value = coloredPuzzleMap;
 };
 
