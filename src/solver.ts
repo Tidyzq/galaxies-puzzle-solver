@@ -108,7 +108,7 @@ export function galaxiesSolver(
         continue;
 
       possibleCenterMap[x][y].push(centerPointIndex);
-      if (x !== sx && y !== sy)
+      if (x !== sx || y !== sy)
         possibleCenterMap[sx][sy].push(centerPointIndex);
 
       forEachDir({ x, y }, (p) => queue.push(p));
